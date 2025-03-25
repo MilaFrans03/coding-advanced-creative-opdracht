@@ -1,11 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradiënt Bubbles</title>
+  <style>
+    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #1e1e1e; }
+    canvas { border: 2px solid #fff; }
+  </style>
 </head>
 <body>
-    
+  <canvas id="myCanvas" width="800" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const bubbles = [];
+
+    // Bubble object
+    class Bubble {
+      constructor(x, y, radius, gradient, speedX, speedY) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.gradient = gradient;
+        this.isPopped = false;
+        this.speedX = speedX;
+        this.speedY = speedY;
+      }
+
+      // Update position of the bubble
+      update() {
+        if (this.isPopped) return; // Don't update popped bubbles
+
+        // Move the bubble upwards, with slight horizontal variation
+        this.x += this.speedX;
+        this.y -= this.speedY;
+
+        // If the bubble goes out of the screen, remove it
+        if (this.y + this.radius < 0 || this.x + this.radius < 0 || this.x - this.radius > canvas.width) {
+          this.isPopped = true;
+        }
+      }
+
+      // Draw the bubble
+      draw() {
+        if (this.isPopped) return;
+
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = this.gradient;
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      checkIfClicked(mouseX, mouseY) {
+        const dist = Math.sqrt((mouseX - this.x) ** 2 + (mouseY - this.y) ** 2);
+        if (dist < this.radius) {
+          this.isPopped = true;
+        }
+      }
+    }
+
+    // Create a random bubble
+    function createRandomBubble() {
+      const side = Math.floor(Math.random() * 4); // Randomly pick top, bottom, left, or right side to spawn
+      const radius = Math.random() * 50 + 20;
+      const speedY = Math.random() * 2 + 1; // Speed of upward movement
+      const speedX = (Math.random() - 0.5) * 2; // Random slight horizontal movement
+
+      let x, y;
+      if (side === 0) { // Top
+        x = Math.random() * canvas.width;
+        y = canvas.height;
+      } else if (side === 1) { // Bottom
+        x = Math.random() * canvas.width;
+        y = 0;
+      } else if (side === 2) { // Left
+        x = 0;
+        y = Math.random() * canvas.height;
+      } else { // Right
+        x = canvas.width;
+        y = Math.random() * canvas.height;
+      }
+
+      // Create a gradient for the bubble
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      gradient.addColorStop(0, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`);
+      gradient.addColorStop(1, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.4)`);
+
+      const bubble = new Bubble(x, y, radius, gradient, speedX, speedY);
+      bubbles.push(bubble);
+    }
+
+    // Draw all bubbles
+    function drawBubbles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      bubbles.forEach(bubble => {
+        bubble.update();
+        bubble.draw();
+      });
+    }
+
+    // Handle mouse click event
+    canvas.addEventListener('click', (event) => {
+      const mouseX = event.offsetX;
+      const mouseY = event.offsetY;
+      
+      bubbles.forEach(bubble => bubble.checkIfClicked(mouseX, mouseY));
+      drawBubbles(); // Redraw after popping the bubble
+    });
+
+    // Create bubbles at regular intervals
+    setInterval(createRandomBubble, 1000);
+
+    // Main drawing loop
+    function animate() {
+      drawBubbles();
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
 </body>
 </html>
