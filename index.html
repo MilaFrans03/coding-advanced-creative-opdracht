@@ -38,7 +38,7 @@
         this.y -= this.speedY;
 
         // If the bubble goes out of the screen, remove it
-        if (this.y + this.radius < 0 || this.x + this.radius < 0 || this.x - this.radius > canvas.width) {
+        if (this.y + this.radius < 0 || this.x + this.radius < 0 || this.x - this.radius > canvas.width || this.y - this.radius > canvas.height) {
           this.isPopped = true;
         }
       }
@@ -72,15 +72,15 @@
       let x, y;
       if (side === 0) { // Top
         x = Math.random() * canvas.width;
-        y = canvas.height;
+        y = canvas.height + radius; // Start below the canvas to avoid the bubble being cut off
       } else if (side === 1) { // Bottom
         x = Math.random() * canvas.width;
-        y = 0;
+        y = 0 - radius; // Start above the canvas to avoid the bubble being cut off
       } else if (side === 2) { // Left
-        x = 0;
+        x = 0 - radius; // Start to the left of the canvas
         y = Math.random() * canvas.height;
       } else { // Right
-        x = canvas.width;
+        x = canvas.width + radius; // Start to the right of the canvas
         y = Math.random() * canvas.height;
       }
 
