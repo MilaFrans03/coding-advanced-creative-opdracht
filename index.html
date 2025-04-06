@@ -34,11 +34,11 @@
   <div class="gradient-overlay"></div>
   <canvas id="myCanvas" width="800" height="600"></canvas>
   <script>
-        // Laad het geluidseffect
-const bubblePopSound = new Audio('bubble_pop.mp3');
+    // Laad het geluidseffect
+    const bubblePopSound = new Audio('bubble_pop.mp3');
 
-// Speel het geluid af wanneer een bubbel wordt geklikt
-bubblePopSound.play();
+    // Speel het geluid af wanneer een bubbel wordt geklikt
+    bubblePopSound.play();
 
     const canvas = document.getElementById("myCanvas");
     const ctx = canvas.getContext("2d");
@@ -46,7 +46,7 @@ bubblePopSound.play();
     const bubbles = [];
     let score = 0;
 
-    // Particle object for burst effect
+    // Particle object voor burst effect
     class Particle {
       constructor(x, y, radius, gradient, speedX, speedY, life) {
         this.x = x;
@@ -80,7 +80,7 @@ bubblePopSound.play();
 
     // Bubble object
     class Bubble {
-      constructor(x, y, radius, gradient, speedX, speedY) {
+      constructor(x, y, radius, gradient, speedX, speedY, isGlowy = false) {
         this.x = x;
         this.y = y;
         this.radius = radius;
@@ -89,6 +89,7 @@ bubblePopSound.play();
         this.speedX = speedX;
         this.speedY = speedY;
         this.particles = [];
+        this.isGlowy = isGlowy;
       }
 
       update() {
@@ -102,12 +103,15 @@ bubblePopSound.play();
           this.x += this.speedX;
           this.y -= this.speedY;
 
-          if (this.x - this.radius < 0) this.x = this.radius;
-          if (this.x + this.radius > canvas.width) this.x = canvas.width - this.radius;
+          // Laat de bubbel poppen als deze de bovenkant raakt
           if (this.y - this.radius < 0) {
             this.y = this.radius;
-            this.pop();
+            this.pop(); // Pop de bubbel
           }
+
+          // Controleer of de bubbel buiten het canvas gaat
+          if (this.x - this.radius < 0) this.x = this.radius;
+          if (this.x + this.radius > canvas.width) this.x = canvas.width - this.radius;
           if (this.y + this.radius > canvas.height) this.y = canvas.height - this.radius;
         }
       }
@@ -121,6 +125,14 @@ bubblePopSound.play();
           ctx.fillStyle = this.gradient;
           ctx.fill();
           ctx.stroke();
+
+          // Extra glowy effect voor glowy bubbels
+          if (this.isGlowy) {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+          } else {
+            ctx.shadowBlur = 0;
+          }
         }
       }
 
@@ -130,17 +142,24 @@ bubblePopSound.play();
           this.isPopped = true;
           this.createBurstEffect();
           bubblePopSound.play(); 
+          
+          // Verhoog de score, 3 punten voor glowy bubbels
+          if (this.isGlowy) {
+            score += 3;
+          } else {
+            score++; // 1 punt voor normale bubbels
+          }
+          
           return true;
         }
         return false;
       }
 
       pop() {
-  this.isPopped = true;
-  this.createBurstEffect();
-  bubblePopSound.play(); // Geluid afspelen
-}
-
+        this.isPopped = true;
+        this.createBurstEffect();
+        bubblePopSound.play(); // Geluid afspelen
+      }
 
       createBurstEffect() {
         const numParticles = 20;
@@ -156,7 +175,7 @@ bubblePopSound.play();
       }
     }
 
-    // Create a random bubble
+    // Maak een willekeurige bubbel aan
     function createRandomBubble() {
       const side = Math.floor(Math.random() * 4);
       const radius = Math.random() * 50 + 20;
@@ -164,6 +183,8 @@ bubblePopSound.play();
       const speedX = (Math.random() - 0.5) * 2;
 
       let x, y;
+      let isGlowy = Math.random() < 0.2;  // 20% kans op glowy bubbels
+
       if (side === 0) {
         x = Math.random() * canvas.width;
         y = canvas.height + radius;
@@ -182,11 +203,12 @@ bubblePopSound.play();
       gradient.addColorStop(0, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`);
       gradient.addColorStop(1, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.4)`);
 
-      const bubble = new Bubble(x, y, radius, gradient, speedX, speedY);
+      // Maak een nieuwe bubbel (glowy of niet)
+      const bubble = new Bubble(x, y, radius, gradient, speedX, speedY, isGlowy);
       bubbles.push(bubble);
     }
 
-    // Draw bubbles and score
+    // Teken de bubbels en score
     function drawBubbles() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       bubbles.forEach(bubble => {
@@ -199,7 +221,7 @@ bubblePopSound.play();
       ctx.fillText("Score: " + score, 20, 30);
     }
 
-    // Handle mouse click event
+    // Verwerk de muisklik
     canvas.addEventListener('click', (event) => {
       const mouseX = event.offsetX;
       const mouseY = event.offsetY;
@@ -207,7 +229,6 @@ bubblePopSound.play();
       let bubbleClicked = false;
       bubbles.forEach(bubble => {
         if (bubble.checkIfClicked(mouseX, mouseY)) {
-          score++; // Increment score when a bubble is clicked
           bubbleClicked = true;
         }
       });
@@ -217,33 +238,31 @@ bubblePopSound.play();
       }
     });
 
-    // Create bubbles at regular intervals
+    // Maak bubbels op regelmatige intervallen
     setInterval(createRandomBubble, 1000);
 
-    // Smooth gradient background color change (Dark gray base with colorful patches)
+    // Verander achtergrondkleur met een gradient
     let gradientStart = [
       { r: 15, g: 15, b: 15 },  // Donkerder grijs (bijna zwart)
       { r: 0, g: 255, b: 0 },   // Groene patch
       { r: 255, g: 0, b: 0 },   // Rode patch
       { r: 0, g: 0, b: 255 },   // Blauwe patch
     ];
-    let gradientProgress = 0; // Progress of gradient transition
+    let gradientProgress = 0; // Progress van de gradient overgang
 
     function changeBackgroundColor() {
-      gradientProgress += 0.002; // Slowly increase to transition
+      gradientProgress += 0.002; // Verhoog langzaam voor de overgang
 
       if (gradientProgress >= 1) {
-        gradientProgress = 0; // Reset for a new cycle
-        // Swap gradient colors periodically
+        gradientProgress = 0; // Reset voor een nieuwe cyclus
         gradientStart = [
-          { r: 15, g: 15, b: 15 },  // Donkerder grijs (bijna zwart)
-          { r: Math.random() * 255, g: Math.random() * 255, b: Math.random() * 255 }, // Random color patch
+          { r: 15, g: 15, b: 15 },
+          { r: Math.random() * 255, g: Math.random() * 255, b: Math.random() * 255 },
           { r: Math.random() * 255, g: Math.random() * 255, b: Math.random() * 255 },
           { r: Math.random() * 255, g: Math.random() * 255, b: Math.random() * 255 }
         ];
       }
 
-      // Calculate the intermediate color values for each corner
       const r1 = Math.floor(gradientStart[0].r + (gradientStart[1].r - gradientStart[0].r) * gradientProgress);
       const g1 = Math.floor(gradientStart[0].g + (gradientStart[1].g - gradientStart[0].g) * gradientProgress);
       const b1 = Math.floor(gradientStart[0].b + (gradientStart[1].b - gradientStart[0].b) * gradientProgress);
@@ -256,7 +275,7 @@ bubblePopSound.play();
       document.querySelector('.gradient-overlay').style.background = gradient;
     }
 
-    // Main drawing loop
+    // Hoofdlus voor het tekenen
     function animate() {
       changeBackgroundColor();
       drawBubbles();
@@ -264,8 +283,6 @@ bubblePopSound.play();
     }
 
     animate();
-
-
 
   </script>
 </body>
