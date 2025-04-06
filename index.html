@@ -5,18 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gradiënt Bubbles</title>
   <style>
-    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #1e1e1e; }
-    canvas { border: 2px solid #fff; }
+    body { 
+      margin: 0; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh; 
+      position: relative;
+      overflow: hidden;
+    }
+    canvas { 
+      border: 2px solid #fff; 
+      background-color: #000; /* Zwarte achtergrond voor de canvas */
+    }
+    .gradient-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* Zorgt ervoor dat de gradientlaag geen interactie blokkeert */
+      z-index: 1;
+      background: linear-gradient(to bottom right, rgba(15, 15, 15, 0.7), rgba(0, 255, 0, 0.5), rgba(255, 0, 0, 0.4), rgba(0, 0, 255, 0.3));
+    }
   </style>
 </head>
 <body>
+  <div class="gradient-overlay"></div>
   <canvas id="myCanvas" width="800" height="600"></canvas>
   <script>
     const canvas = document.getElementById("myCanvas");
     const ctx = canvas.getContext("2d");
 
     const bubbles = [];
-    let score = 0; // Initialize score to 0
+    let score = 0;
 
     // Particle object for burst effect
     class Particle {
@@ -27,24 +49,18 @@
         this.gradient = gradient;
         this.speedX = speedX;
         this.speedY = speedY;
-        this.life = life; // How long the particle lasts before fading out
+        this.life = life;
       }
 
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
-        this.life -= 1; // Decrease life of the particle
+        this.life -= 1;
 
-        // Make sure particles stay within the canvas boundaries
-        if (this.x - this.radius < 0 || this.x + this.radius > canvas.width || 
+        if (this.life <= 0 || this.x - this.radius < 0 || this.x + this.radius > canvas.width || 
             this.y - this.radius < 0 || this.y + this.radius > canvas.height) {
-          this.life = 0; // Remove particle if it goes outside the canvas
+          return true;
         }
-
-        if (this.life <= 0) {
-          return true; // Mark this particle as "dead" if its life is over
-        }
-
         return false;
       }
 
@@ -66,38 +82,32 @@
         this.isPopped = false;
         this.speedX = speedX;
         this.speedY = speedY;
-        this.particles = []; // Store particles for burst effect
+        this.particles = [];
       }
 
-      // Update position of the bubble
       update() {
         if (this.isPopped) {
-          // Handle particle burst effect
           this.particles.forEach((particle, index) => {
             if (particle.update()) {
-              this.particles.splice(index, 1); // Remove dead particles
+              this.particles.splice(index, 1);
             }
           });
         } else {
-          // Move the bubble upwards, with slight horizontal variation
           this.x += this.speedX;
           this.y -= this.speedY;
 
-          // Ensure the bubble stays within the canvas boundaries
-          if (this.x - this.radius < 0) this.x = this.radius; // Left boundary
-          if (this.x + this.radius > canvas.width) this.x = canvas.width - this.radius; // Right boundary
+          if (this.x - this.radius < 0) this.x = this.radius;
+          if (this.x + this.radius > canvas.width) this.x = canvas.width - this.radius;
           if (this.y - this.radius < 0) {
-            this.y = this.radius; // Top boundary, adjust position to stay inside canvas
-            this.pop(); // Pop the bubble when it reaches the top
+            this.y = this.radius;
+            this.pop();
           }
-          if (this.y + this.radius > canvas.height) this.y = canvas.height - this.radius; // Bottom boundary
+          if (this.y + this.radius > canvas.height) this.y = canvas.height - this.radius;
         }
       }
 
-      // Draw the bubble
       draw() {
         if (this.isPopped) {
-          // Draw burst particles
           this.particles.forEach(particle => particle.draw());
         } else {
           ctx.beginPath();
@@ -112,21 +122,19 @@
         const dist = Math.sqrt((mouseX - this.x) ** 2 + (mouseY - this.y) ** 2);
         if (dist < this.radius && !this.isPopped) {
           this.isPopped = true;
-          this.createBurstEffect(); // Create burst effect when popped
-          return true; // Bubble was clicked
+          this.createBurstEffect();
+          return true;
         }
-        return false; // Bubble wasn't clicked
+        return false;
       }
 
-      // Create burst effect when bubble pops
       pop() {
         this.isPopped = true;
-        this.createBurstEffect(); // Trigger the burst effect
+        this.createBurstEffect();
       }
 
-      // Create burst effect when bubble pops
       createBurstEffect() {
-        const numParticles = 20; // Number of particles in the burst
+        const numParticles = 20;
         for (let i = 0; i < numParticles; i++) {
           const speedX = (Math.random() - 0.5) * 5;
           const speedY = (Math.random() - 0.5) * 5;
@@ -134,36 +142,33 @@
           const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, radius);
           gradient.addColorStop(0, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`);
           gradient.addColorStop(1, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.2)`);
-          
-          // Create particles
-          this.particles.push(new Particle(this.x, this.y, radius, gradient, speedX, speedY, 30)); // Particle life set to 30 frames
+          this.particles.push(new Particle(this.x, this.y, radius, gradient, speedX, speedY, 30));
         }
       }
     }
 
     // Create a random bubble
     function createRandomBubble() {
-      const side = Math.floor(Math.random() * 4); // Randomly pick top, bottom, left, or right side to spawn
+      const side = Math.floor(Math.random() * 4);
       const radius = Math.random() * 50 + 20;
-      const speedY = Math.random() * 2 + 1; // Speed of upward movement
-      const speedX = (Math.random() - 0.5) * 2; // Random slight horizontal movement
+      const speedY = Math.random() * 2 + 1;
+      const speedX = (Math.random() - 0.5) * 2;
 
       let x, y;
-      if (side === 0) { // Top
+      if (side === 0) {
         x = Math.random() * canvas.width;
-        y = canvas.height + radius; // Start below the canvas to avoid the bubble being cut off
-      } else if (side === 1) { // Bottom
+        y = canvas.height + radius;
+      } else if (side === 1) {
         x = Math.random() * canvas.width;
-        y = 0 - radius; // Start above the canvas to avoid the bubble being cut off
-      } else if (side === 2) { // Left
-        x = 0 - radius; // Start to the left of the canvas
+        y = 0 - radius;
+      } else if (side === 2) {
+        x = 0 - radius;
         y = Math.random() * canvas.height;
-      } else { // Right
-        x = canvas.width + radius; // Start to the right of the canvas
+      } else {
+        x = canvas.width + radius;
         y = Math.random() * canvas.height;
       }
 
-      // Create a gradient for the bubble
       const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
       gradient.addColorStop(0, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`);
       gradient.addColorStop(1, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.4)`);
@@ -172,7 +177,7 @@
       bubbles.push(bubble);
     }
 
-    // Draw all bubbles and score
+    // Draw bubbles and score
     function drawBubbles() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       bubbles.forEach(bubble => {
@@ -180,7 +185,6 @@
         bubble.draw();
       });
 
-      // Display the score on the canvas
       ctx.fillStyle = "#fff";
       ctx.font = "24px Arial";
       ctx.fillText("Score: " + score, 20, 30);
@@ -190,25 +194,62 @@
     canvas.addEventListener('click', (event) => {
       const mouseX = event.offsetX;
       const mouseY = event.offsetY;
-      
+
       let bubbleClicked = false;
       bubbles.forEach(bubble => {
         if (bubble.checkIfClicked(mouseX, mouseY)) {
-          score++; // Increment score if a bubble was clicked
+          score++; // Increment score when a bubble is clicked
           bubbleClicked = true;
         }
       });
 
       if (bubbleClicked) {
-        drawBubbles(); // Redraw after clicking a bubble
+        drawBubbles();
       }
     });
 
     // Create bubbles at regular intervals
     setInterval(createRandomBubble, 1000);
 
+    // Smooth gradient background color change (Dark gray base with colorful patches)
+    let gradientStart = [
+      { r: 15, g: 15, b: 15 },  // Donkerder grijs (bijna zwart)
+      { r: 0, g: 255, b: 0 },   // Groene patch
+      { r: 255, g: 0, b: 0 },   // Rode patch
+      { r: 0, g: 0, b: 255 },   // Blauwe patch
+    ];
+    let gradientProgress = 0; // Progress of gradient transition
+
+    function changeBackgroundColor() {
+      gradientProgress += 0.002; // Slowly increase to transition
+
+      if (gradientProgress >= 1) {
+        gradientProgress = 0; // Reset for a new cycle
+        // Swap gradient colors periodically
+        gradientStart = [
+          { r: 15, g: 15, b: 15 },  // Donkerder grijs (bijna zwart)
+          { r: Math.random() * 255, g: Math.random() * 255, b: Math.random() * 255 }, // Random color patch
+          { r: Math.random() * 255, g: Math.random() * 255, b: Math.random() * 255 },
+          { r: Math.random() * 255, g: Math.random() * 255, b: Math.random() * 255 }
+        ];
+      }
+
+      // Calculate the intermediate color values for each corner
+      const r1 = Math.floor(gradientStart[0].r + (gradientStart[1].r - gradientStart[0].r) * gradientProgress);
+      const g1 = Math.floor(gradientStart[0].g + (gradientStart[1].g - gradientStart[0].g) * gradientProgress);
+      const b1 = Math.floor(gradientStart[0].b + (gradientStart[1].b - gradientStart[0].b) * gradientProgress);
+      
+      const r2 = Math.floor(gradientStart[2].r + (gradientStart[3].r - gradientStart[2].r) * gradientProgress);
+      const g2 = Math.floor(gradientStart[2].g + (gradientStart[3].g - gradientStart[2].g) * gradientProgress);
+      const b2 = Math.floor(gradientStart[2].b + (gradientStart[3].b - gradientStart[2].b) * gradientProgress);
+
+      const gradient = `linear-gradient(to bottom right, rgba(${r1}, ${g1}, ${b1}, 0.7), rgba(${r2}, ${g2}, ${b2}, 0.4))`;
+      document.querySelector('.gradient-overlay').style.background = gradient;
+    }
+
     // Main drawing loop
     function animate() {
+      changeBackgroundColor();
       drawBubbles();
       requestAnimationFrame(animate);
     }
