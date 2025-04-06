@@ -85,7 +85,10 @@
           // Ensure the bubble stays within the canvas boundaries
           if (this.x - this.radius < 0) this.x = this.radius; // Left boundary
           if (this.x + this.radius > canvas.width) this.x = canvas.width - this.radius; // Right boundary
-          if (this.y - this.radius < 0) this.y = this.radius; // Top boundary
+          if (this.y - this.radius < 0) {
+            this.y = this.radius; // Top boundary, adjust position to stay inside canvas
+            this.pop(); // Pop the bubble when it reaches the top
+          }
           if (this.y + this.radius > canvas.height) this.y = canvas.height - this.radius; // Bottom boundary
         }
       }
@@ -110,6 +113,12 @@
           this.isPopped = true;
           this.createBurstEffect(); // Create burst effect when popped
         }
+      }
+
+      // Create burst effect when bubble pops
+      pop() {
+        this.isPopped = true;
+        this.createBurstEffect(); // Trigger the burst effect
       }
 
       // Create burst effect when bubble pops
