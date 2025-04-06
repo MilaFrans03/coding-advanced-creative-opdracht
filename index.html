@@ -34,6 +34,12 @@
   <div class="gradient-overlay"></div>
   <canvas id="myCanvas" width="800" height="600"></canvas>
   <script>
+        // Laad het geluidseffect
+const bubblePopSound = new Audio('bubble_pop.mp3');
+
+// Speel het geluid af wanneer een bubbel wordt geklikt
+bubblePopSound.play();
+
     const canvas = document.getElementById("myCanvas");
     const ctx = canvas.getContext("2d");
 
@@ -123,15 +129,18 @@
         if (dist < this.radius && !this.isPopped) {
           this.isPopped = true;
           this.createBurstEffect();
+          bubblePopSound.play(); 
           return true;
         }
         return false;
       }
 
       pop() {
-        this.isPopped = true;
-        this.createBurstEffect();
-      }
+  this.isPopped = true;
+  this.createBurstEffect();
+  bubblePopSound.play(); // Geluid afspelen
+}
+
 
       createBurstEffect() {
         const numParticles = 20;
@@ -255,6 +264,9 @@
     }
 
     animate();
+
+
+
   </script>
 </body>
 </html>
