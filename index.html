@@ -17,6 +17,44 @@
 
     const bubbles = [];
 
+    // Particle object for burst effect
+    class Particle {
+      constructor(x, y, radius, gradient, speedX, speedY, life) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.gradient = gradient;
+        this.speedX = speedX;
+        this.speedY = speedY;
+        this.life = life; // How long the particle lasts before fading out
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life -= 1; // Decrease life of the particle
+
+        // Make sure particles stay within the canvas boundaries
+        if (this.x - this.radius < 0 || this.x + this.radius > canvas.width || 
+            this.y - this.radius < 0 || this.y + this.radius > canvas.height) {
+          this.life = 0; // Remove particle if it goes outside the canvas
+        }
+
+        if (this.life <= 0) {
+          return true; // Mark this particle as "dead" if its life is over
+        }
+
+        return false;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = this.gradient;
+        ctx.fill();
+      }
+    }
+
     // Bubble object
     class Bubble {
       constructor(x, y, radius, gradient, speedX, speedY) {
@@ -27,37 +65,66 @@
         this.isPopped = false;
         this.speedX = speedX;
         this.speedY = speedY;
+        this.particles = []; // Store particles for burst effect
       }
 
       // Update position of the bubble
       update() {
-        if (this.isPopped) return; // Don't update popped bubbles
+        if (this.isPopped) {
+          // Handle particle burst effect
+          this.particles.forEach((particle, index) => {
+            if (particle.update()) {
+              this.particles.splice(index, 1); // Remove dead particles
+            }
+          });
+        } else {
+          // Move the bubble upwards, with slight horizontal variation
+          this.x += this.speedX;
+          this.y -= this.speedY;
 
-        // Move the bubble upwards, with slight horizontal variation
-        this.x += this.speedX;
-        this.y -= this.speedY;
-
-        // If the bubble goes out of the screen, remove it
-        if (this.y + this.radius < 0 || this.x + this.radius < 0 || this.x - this.radius > canvas.width || this.y - this.radius > canvas.height) {
-          this.isPopped = true;
+          // Ensure the bubble stays within the canvas boundaries
+          if (this.x - this.radius < 0) this.x = this.radius; // Left boundary
+          if (this.x + this.radius > canvas.width) this.x = canvas.width - this.radius; // Right boundary
+          if (this.y - this.radius < 0) this.y = this.radius; // Top boundary
+          if (this.y + this.radius > canvas.height) this.y = canvas.height - this.radius; // Bottom boundary
         }
       }
 
       // Draw the bubble
       draw() {
-        if (this.isPopped) return;
-
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-        ctx.fillStyle = this.gradient;
-        ctx.fill();
-        ctx.stroke();
+        if (this.isPopped) {
+          // Draw burst particles
+          this.particles.forEach(particle => particle.draw());
+        } else {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+          ctx.fillStyle = this.gradient;
+          ctx.fill();
+          ctx.stroke();
+        }
       }
 
       checkIfClicked(mouseX, mouseY) {
         const dist = Math.sqrt((mouseX - this.x) ** 2 + (mouseY - this.y) ** 2);
-        if (dist < this.radius) {
+        if (dist < this.radius && !this.isPopped) {
           this.isPopped = true;
+          this.createBurstEffect(); // Create burst effect when popped
+        }
+      }
+
+      // Create burst effect when bubble pops
+      createBurstEffect() {
+        const numParticles = 20; // Number of particles in the burst
+        for (let i = 0; i < numParticles; i++) {
+          const speedX = (Math.random() - 0.5) * 5;
+          const speedY = (Math.random() - 0.5) * 5;
+          const radius = Math.random() * 5 + 1;
+          const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, radius);
+          gradient.addColorStop(0, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`);
+          gradient.addColorStop(1, `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.2)`);
+          
+          // Create particles
+          this.particles.push(new Particle(this.x, this.y, radius, gradient, speedX, speedY, 30)); // Particle life set to 30 frames
         }
       }
     }
