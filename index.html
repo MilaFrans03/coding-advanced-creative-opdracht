@@ -16,6 +16,7 @@
     const ctx = canvas.getContext("2d");
 
     const bubbles = [];
+    let score = 0; // Initialize score to 0
 
     // Particle object for burst effect
     class Particle {
@@ -112,7 +113,9 @@
         if (dist < this.radius && !this.isPopped) {
           this.isPopped = true;
           this.createBurstEffect(); // Create burst effect when popped
+          return true; // Bubble was clicked
         }
+        return false; // Bubble wasn't clicked
       }
 
       // Create burst effect when bubble pops
@@ -169,13 +172,18 @@
       bubbles.push(bubble);
     }
 
-    // Draw all bubbles
+    // Draw all bubbles and score
     function drawBubbles() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       bubbles.forEach(bubble => {
         bubble.update();
         bubble.draw();
       });
+
+      // Display the score on the canvas
+      ctx.fillStyle = "#fff";
+      ctx.font = "24px Arial";
+      ctx.fillText("Score: " + score, 20, 30);
     }
 
     // Handle mouse click event
@@ -183,8 +191,17 @@
       const mouseX = event.offsetX;
       const mouseY = event.offsetY;
       
-      bubbles.forEach(bubble => bubble.checkIfClicked(mouseX, mouseY));
-      drawBubbles(); // Redraw after popping the bubble
+      let bubbleClicked = false;
+      bubbles.forEach(bubble => {
+        if (bubble.checkIfClicked(mouseX, mouseY)) {
+          score++; // Increment score if a bubble was clicked
+          bubbleClicked = true;
+        }
+      });
+
+      if (bubbleClicked) {
+        drawBubbles(); // Redraw after clicking a bubble
+      }
     });
 
     // Create bubbles at regular intervals
